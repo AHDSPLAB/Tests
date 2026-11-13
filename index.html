@@ -197,7 +197,6 @@
       <label class="w">Useful for (one item per line)<textarea id="euf"></textarea></label>
       <label class="w">Interpretation<textarea id="eint"></textarea></label>
       <label class="w">Abnormal findings (one line per group, e.g. "High: cause; cause")<textarea id="eabn"></textarea></label>
-      <label>Source line<select id="esrc"><option value="y">Mayo Clinic Laboratories Test Catalog</option><option value="m">Mosby's Diagnostic and Laboratory Test Reference</option><option value="f">A Manual of Laboratory and Diagnostic Tests</option><option value="t">Tietz Textbook of Laboratory Medicine</option><option value="e">Entered by laboratory supervisors</option><option value="g">General summary</option></select></label>
       <label id="eshare" class="w chk" hidden><input id="esharecb" type="checkbox"><span id="esharetxt"></span></label>
       <div class="grp">Saved by</div>
       <label>Your name (shown in the change history)<input id="eby" type="text" autocomplete="name"></label>
@@ -426,7 +425,6 @@ function detail(t) {
       });
       about.appendChild(box);
     }
-    about.appendChild(el('div', 'src mono', g.src === 'm' ? "Source: Mosby's Diagnostic and Laboratory Test Reference" : g.src === 'f' ? "Source: A Manual of Laboratory and Diagnostic Tests" : g.src === 't' ? "Source: Tietz Textbook of Laboratory Medicine (7th ed.)" : g.src === 'y' ? "Reference: Mayo Clinic Laboratories Test Catalog" : g.src === 'e' ? "Entered by laboratory supervisors" : "General summary — confirm against the lab's reference before clinical use"));
   }
   d.appendChild(about);
   const fields = el('div', 'fields');
@@ -633,7 +631,6 @@ function openEditor(t) {
   $('euf').value = g && g.ci ? (g.uf || '') : '';
   $('eint').value = g && g.ci ? (g.interp || '') : '';
   $('eabn').value = g ? (g.abn || '') : '';
-  $('esrc').value = g ? (g.src || 'g') : 'e';
   const shared = t && t.g !== undefined && t.g !== null ? TESTS.filter(x => x.g === t.g).length : 0;
   $('eshare').hidden = shared < 2; $('esharecb').checked = false;
   $('esharetxt').textContent = 'This description is shared by ' + shared + ' tests (name variants). Apply description changes to all of them';
@@ -649,7 +646,7 @@ function readForm() {
   const kw = $('ekw').value.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
   f.k = kw.length ? '|' + kw.join('|') + '|' : '';
   return { f, show, aka: $('eaka').value.trim(), ci: $('eci').value.trim(), uf: $('euf').value.trim(), interp: $('eint').value.trim(),
-    abn: $('eabn').value.trim(), src: $('esrc').value, shareAll: $('esharecb').checked };
+    abn: $('eabn').value.trim(), shareAll: $('esharecb').checked };
 }
 function applyChange(T, G, op) {
   if (op.kind === 'delete') { const i = T.findIndex(x => x.id === op.id); if (i < 0) throw new Error('This test was already removed by someone else.'); return { before: T.splice(i, 1)[0], after: null }; }
@@ -659,11 +656,11 @@ function applyChange(T, G, op) {
   Object.assign(t, op.form.f);
   t.show = op.form.show;
   const fm = op.form, g = t.g !== undefined && t.g !== null ? G[t.g] : null;
-  const view = x => x ? [x.aka || '', x.ci || x.expl || '', x.ci ? x.uf || '' : '', x.ci ? x.interp || '' : '', x.abn || '', x.src || 'g'] : ['', '', '', '', '', 'e'];
-  const newText = [fm.aka, fm.ci, fm.uf, fm.interp, fm.abn, fm.src];
+  const view = x => x ? [x.aka || '', x.ci || x.expl || '', x.ci ? x.uf || '' : '', x.ci ? x.interp || '' : '', x.abn || ''] : ['', '', '', '', ''];
+  const newText = [fm.aka, fm.ci, fm.uf, fm.interp, fm.abn];
   if (JSON.stringify(view(g)) !== JSON.stringify(newText)) {
     const fill = x => {
-      x.aka = fm.aka; x.abn = fm.abn; x.src = fm.src;
+      x.aka = fm.aka; x.abn = fm.abn;
       if (fm.uf || fm.interp || x.ci) { x.ci = fm.ci; x.uf = fm.uf; x.interp = fm.interp; x.expl = fm.ci; } else x.expl = fm.ci;
     };
     if (!g) { if (fm.ci || fm.uf || fm.interp || fm.aka || fm.abn) { const ng = { aka: '', expl: '', abn: '', src: 'e' }; fill(ng); G.push(ng); t.g = G.length - 1; } }
